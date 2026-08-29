@@ -30,6 +30,7 @@
 #include "reporting.hh"
 #include "qapi/error.h"
 #include "actions.hh"
+#include "i18n.hh"
 
 #include "../xemu-input.h"
 #include "../xemu-notifications.h"
@@ -204,7 +205,7 @@ void MainMenuInputView::Draw()
     ImGui::Columns(2, "", false);
     ImGui::SetColumnWidth(0, ImGui::GetWindowWidth()*0.25);
 
-    ImGui::Text("Emulated Device");
+    ImGui::Text("%s", XEMU_TR("Emulated Device"));
     ImGui::SameLine(0, 0);
     ImGui::NextColumn();
 
@@ -243,12 +244,12 @@ void MainMenuInputView::Draw()
     // Render input device combo
     //
 
-    ImGui::Text("Input Device");
+    ImGui::Text("%s", XEMU_TR("Input Device"));
     ImGui::SameLine(0, 0);
     ImGui::NextColumn();
 
     // List available input devices
-    const char *not_connected = "Not Connected";
+    const char *not_connected = XEMU_TR("Not Connected");
     ControllerState *bound_state = xemu_input_get_bound(active);
 
     // Get current controller name
@@ -256,7 +257,7 @@ void MainMenuInputView::Draw()
     if (bound_state == NULL) {
         name = not_connected;
     } else {
-        name = bound_state->name;
+        name = XEMU_TR(bound_state->name);
     }
 
     ImGui::SetNextItemWidth(-FLT_MIN);
@@ -277,10 +278,11 @@ void MainMenuInputView::Draw()
         QTAILQ_FOREACH(iter, &available_controllers, entry) {
             is_selected = bound_state == iter;
             ImGui::PushID(iter);
-            const char *selectable_label = iter->name;
+            const char *selectable_label = XEMU_TR(iter->name);
             char buf[128];
             if (iter->bound >= 0) {
-                snprintf(buf, sizeof(buf), "%s (Port %d)", iter->name, iter->bound+1);
+                snprintf(buf, sizeof(buf), XEMU_TR("%s (Port %d)"),
+                         XEMU_TR(iter->name), iter->bound + 1);
                 selectable_label = buf;
             }
             if (ImGui::Selectable(selectable_label, is_selected)) {
@@ -350,7 +352,7 @@ void MainMenuInputView::Draw()
         ImVec2(controller_width/t_w, 0));
     ImVec2 pos = ImGui::GetCursorPos();
     if (!device_selected) {
-        const char *msg = "Please select an available input device";
+        const char *msg = XEMU_TR("Please select an available input device");
         ImVec2 dim = ImGui::CalcTextSize(msg);
         ImGui::SetCursorPosX(cur.x + (controller_display_size.x-dim.x)/2);
         ImGui::SetCursorPosY(cur.y + (controller_display_size.y-dim.y)/2);
@@ -385,7 +387,9 @@ void MainMenuInputView::Draw()
             // peripheral they want to use
             enum peripheral_type selected_type =
                 bound_state->peripheral_types[i];
-            const char *peripheral_type_names[2] = { "None", "Memory Unit" };
+            const char *peripheral_type_names[2] = {
+                XEMU_TR("None"), XEMU_TR("Memory Unit")
+            };
             const char *selected_peripheral_type =
                 peripheral_type_names[selected_type];
             ImGui::SetNextItemWidth(-FLT_MIN);
@@ -480,7 +484,7 @@ void MainMenuInputView::Draw()
 
                 // Button to generate a new XMU
                 ImGui::PushID(i);
-                if (ImGui::Button("New Image", ImVec2(250, 0))) {
+                if (ImGui::Button(XEMU_TR("New Image"), ImVec2(250, 0))) {
                     int port = active;
                     int slot = i;
                     ShowSaveFileDialog(img_file_filters, 2, nullptr, [port, slot](const char *new_path) {
@@ -490,7 +494,7 @@ void MainMenuInputView::Draw()
                         } else {
                             // Show alert message
                             char *msg = g_strdup_printf(
-                                "Unable to create XMU image at %s", new_path);
+                                XEMU_TR("Unable to create XMU image at %s"), new_path);
                             xemu_queue_error_message(msg);
                             g_free(msg);
                         }
@@ -524,14 +528,14 @@ void MainMenuInputView::Draw()
         tc.w = 0.0f;
         ImGui::PushStyleColor(ImGuiCol_Header, tc);
 
-        if (ImGui::CollapsingHeader("Input Mapping")) {
+        if (ImGui::CollapsingHeader(XEMU_TR("Input Mapping"))) {
             float p = ImGui::GetFrameHeight() * 0.3;
             ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(p, p));
             if (ImGui::BeginTable("input_remap_tbl", 2,
                                   ImGuiTableFlags_RowBg |
                                       ImGuiTableFlags_Borders)) {
-                ImGui::TableSetupColumn("Emulated Input");
-                ImGui::TableSetupColumn("Host Input");
+                ImGui::TableSetupColumn(XEMU_TR("Emulated Input"));
+                ImGui::TableSetupColumn(XEMU_TR("Host Input"));
                 ImGui::TableHeadersRow();
 
                 PopulateTableController(bound_state);
@@ -558,7 +562,7 @@ void MainMenuInputView::Draw()
                         .invert_axis_right_y);
         }
 
-        if (ImGui::Button("Reset to Default")) {
+        if (ImGui::Button(XEMU_TR("Reset to Default"))) {
             xemu_input_reset_input_mapping(bound_state);
         }
 
@@ -651,16 +655,16 @@ void MainMenuInputView::PopulateTableController(ControllerState *state)
         ImGui::TableSetColumnIndex(0);
 
         if (i < num_face_buttons) {
-          ImGui::Text("%s", face_button_index_to_name_map[i]);
+          ImGui::Text("%s", XEMU_TR(face_button_index_to_name_map[i]));
         } else {
-          ImGui::Text("%s", axis_index_to_name_map[i - num_face_buttons]);
+          ImGui::Text("%s", XEMU_TR(axis_index_to_name_map[i - num_face_buttons]));
         }
 
         // Button Binding Column
         ImGui::TableSetColumnIndex(1);
 
         if (m_rebinding && m_rebinding->GetTableRow() == i) {
-            ImGui::Text("Press a key to rebind");
+            ImGui::Text("%s", XEMU_TR("Press a key to rebind"));
             continue;
         }
 
@@ -839,7 +843,7 @@ void MainMenuAudioView::Draw()
 {
     SectionTitle("Volume");
     char buf[32];
-    snprintf(buf, sizeof(buf), "Limit output volume (%d%%)",
+    snprintf(buf, sizeof(buf), XEMU_TR("Limit output volume (%d%%)"),
              (int)(g_config.audio.volume_limit * 100));
     Slider("Output volume limit", &g_config.audio.volume_limit, buf);
 
@@ -985,7 +989,7 @@ void MainMenuNetworkView::DrawPcapOptions(bool appearing)
         ImGui::Text("%s", msg);
         ImGui::Dummy(ImVec2(0,10*g_viewport_mgr.m_scale));
         ImGui::SetCursorPosX((ImGui::GetWindowWidth()-120*g_viewport_mgr.m_scale)/2);
-        if (ImGui::Button("Install npcap", ImVec2(120*g_viewport_mgr.m_scale, 0))) {
+        if (ImGui::Button(XEMU_TR("Install npcap"), ImVec2(120*g_viewport_mgr.m_scale, 0))) {
             SDL_OpenURL("https://nmap.org/npcap/");
         }
 #endif
@@ -1039,10 +1043,10 @@ void MainMenuNetworkView::DrawNatOptions(bool appearing)
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(p, p));
     if (ImGui::BeginTable("port_forward_tbl", 4, flags))
     {
-        ImGui::TableSetupColumn("Host Port");
-        ImGui::TableSetupColumn("Guest Port");
-        ImGui::TableSetupColumn("Protocol");
-        ImGui::TableSetupColumn("Action");
+        ImGui::TableSetupColumn(XEMU_TR("Host Port"));
+        ImGui::TableSetupColumn(XEMU_TR("Guest Port"));
+        ImGui::TableSetupColumn(XEMU_TR("Protocol"));
+        ImGui::TableSetupColumn(XEMU_TR("Action"));
         ImGui::TableHeadersRow();
 
         for (unsigned int row = 0; row < g_config.net.nat.forward_ports_count; row++)
@@ -1066,7 +1070,7 @@ void MainMenuNetworkView::DrawNatOptions(bool appearing)
 
             ImGui::TableSetColumnIndex(3);
             ImGui::PushID(row);
-            if (ImGui::Button("Remove")) {
+            if (ImGui::Button(XEMU_TR("Remove"))) {
                 remove_net_nat_forward_ports(row);
             }
             ImGui::PopID();
@@ -1092,7 +1096,7 @@ void MainMenuNetworkView::DrawNatOptions(bool appearing)
         ImGui::Combo("###protocol", &protocol, "TCP\0UDP\0");
 
         ImGui::TableSetColumnIndex(3);
-        if (ImGui::Button("Add")) {
+        if (ImGui::Button(XEMU_TR("Add"))) {
             int host, guest;
             if (sscanf(buf, "%d", &host) == 1 &&
                 sscanf(buf2, "%d", &guest) == 1) {
@@ -1240,7 +1244,7 @@ bool MainMenuSnapshotsView::BigSnapshotButton(QEMUSnapshotInfo *snapshot,
     // Snapshot keyboard binding
     if (current_snapshot_binding != -1) {
         char *binding_text =
-            g_strdup_printf("Bound to F%d", current_snapshot_binding + 5);
+            g_strdup_printf(XEMU_TR("Bound to F%d"), current_snapshot_binding + 5);
         draw_list->AddText(ImVec2(p0.x + binding_pos.x, p0.y + binding_pos.y),
                            IM_COL32(255, 255, 255, 200), binding_text);
         g_free(binding_text);
@@ -1322,7 +1326,7 @@ void MainMenuSnapshotsView::Draw()
 
     ImGui::SetNextItemWidth(ImGui::GetColumnWidth() * 0.8);
     ImGui::PushFont(g_font_mgr.m_menu_font_small);
-    ImGui::InputTextWithHint("##search", "Search or name new snapshot...",
+    ImGui::InputTextWithHint("##search", XEMU_TR("Search or name new snapshot..."),
                              &m_search_buf, ImGuiInputTextFlags_CallbackEdit,
                              &OnSearchTextUpdate, this);
 
@@ -1341,7 +1345,7 @@ void MainMenuSnapshotsView::Draw()
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 0, 0, 1));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 0, 0, 1));
     }
-    if (ImGui::Button(snapshot_with_create_name_exists ? "Replace" : "Create",
+    if (ImGui::Button(XEMU_TR(snapshot_with_create_name_exists ? "Replace" : "Create"),
                       ImVec2(-FLT_MIN, 0))) {
         xemu_snapshots_save(m_search_buf.empty() ? NULL : m_search_buf.c_str(),
                             NULL);
@@ -1352,8 +1356,7 @@ void MainMenuSnapshotsView::Draw()
     }
 
     if (snapshot_with_create_name_exists && ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("A snapshot with the name \"%s\" already exists. "
-                          "This button will overwrite the existing snapshot.",
+        ImGui::SetTooltip(XEMU_TR("A snapshot with the name \"%s\" already exists. This button will overwrite the existing snapshot."),
                           m_search_buf.c_str());
     }
     ImGui::PopFont();
@@ -1431,12 +1434,12 @@ void MainMenuSnapshotsView::Draw()
         const char *msg;
         if (g_snapshot_mgr.m_snapshots_len) {
             if (!m_search_buf.empty()) {
-                msg = "Press Create to create new snapshot";
+                msg = XEMU_TR("Press Create to create new snapshot");
             } else {
-                msg = "No snapshots match filter criteria";
+                msg = XEMU_TR("No snapshots match filter criteria");
             }
         } else {
-            msg = "No snapshots to display";
+            msg = XEMU_TR("No snapshots to display");
         }
         ImVec2 dim = ImGui::CalcTextSize(msg);
         ImVec2 cur = ImGui::GetCursorPos();
@@ -1453,13 +1456,13 @@ void MainMenuSnapshotsView::DrawSnapshotContextMenu(
         return;
     }
 
-    if (ImGui::MenuItem("Load")) {
+    if (ImGui::MenuItem(XEMU_TR("Load"))) {
         ActionLoadSnapshotChecked(snapshot->name);
     }
 
-    if (ImGui::BeginMenu("Keybinding")) {
+    if (ImGui::BeginMenu(XEMU_TR("Keybinding"))) {
         for (int i = 0; i < 4; ++i) {
-            char *item_name = g_strdup_printf("Bind to F%d", i + 5);
+            char *item_name = g_strdup_printf(XEMU_TR("Bind to F%d"), i + 5);
 
             if (ImGui::MenuItem(item_name)) {
                 if (current_snapshot_binding >= 0) {
@@ -1478,7 +1481,7 @@ void MainMenuSnapshotsView::DrawSnapshotContextMenu(
         }
 
         if (current_snapshot_binding >= 0) {
-            if (ImGui::MenuItem("Unbind")) {
+            if (ImGui::MenuItem(XEMU_TR("Unbind"))) {
                 xemu_settings_set_string(
                     g_snapshot_shortcut_index_key_map[current_snapshot_binding],
                     "");
@@ -1492,11 +1495,11 @@ void MainMenuSnapshotsView::DrawSnapshotContextMenu(
 
     Error *err = NULL;
 
-    if (ImGui::MenuItem("Replace")) {
+    if (ImGui::MenuItem(XEMU_TR("Replace"))) {
         xemu_snapshots_save(snapshot->name, &err);
     }
 
-    if (ImGui::MenuItem("Delete")) {
+    if (ImGui::MenuItem(XEMU_TR("Delete"))) {
         xemu_snapshots_delete(snapshot->name, &err);
     }
 
@@ -1526,11 +1529,11 @@ void MainMenuSystemView::Draw()
 
     if (m_dirty) {
         ImGui::TextColored(ImVec4(1, 0, 0, 1),
-                           "Application restart required to apply settings");
+                           "%s", XEMU_TR("Application restart required to apply settings"));
     }
 
     if ((int)g_config.sys.avpack == CONFIG_SYS_AVPACK_NONE) {
-        ImGui::TextColored(ImVec4(1,0,0,1), "Setting AV Pack to NONE disables video output.");
+        ImGui::TextColored(ImVec4(1,0,0,1), "%s", XEMU_TR("Setting AV Pack to NONE disables video output."));
     }
 
     SectionTitle("System Configuration");
@@ -1662,13 +1665,13 @@ void MainMenuAboutView::Draw()
 
     SectionTitle("Community");
 
-    ImGui::Text("Visit");
+    ImGui::Text("%s", XEMU_TR("Visit"));
     ImGui::SameLine();
     if (ImGui::SmallButton("https://xemu.app")) {
         SDL_OpenURL("https://xemu.app");
     }
     ImGui::SameLine();
-    ImGui::Text("for more information");
+    ImGui::Text("%s", XEMU_TR("for more information"));
 }
 
 MainMenuTabButton::MainMenuTabButton(std::string text, std::string icon)
@@ -1707,14 +1710,14 @@ bool MainMenuTabButton::Draw(bool selected)
 }
 
 MainMenuScene::MainMenuScene()
-    : m_animation(0.12, 0.12), m_general_button("General", ICON_FA_GEARS),
-      m_input_button("Input", ICON_FA_GAMEPAD),
-      m_display_button("Display", ICON_FA_TV),
-      m_audio_button("Audio", ICON_FA_VOLUME_HIGH),
-      m_network_button("Network", ICON_FA_NETWORK_WIRED),
-      m_snapshots_button("Snapshots", ICON_FA_CLOCK_ROTATE_LEFT),
-      m_system_button("System", ICON_FA_MICROCHIP),
-      m_about_button("About", ICON_FA_CIRCLE_INFO)
+    : m_animation(0.12, 0.12), m_general_button(XEMU_TR("General"), ICON_FA_GEARS),
+      m_input_button(XEMU_TR("Input"), ICON_FA_GAMEPAD),
+      m_display_button(XEMU_TR("Display"), ICON_FA_TV),
+      m_audio_button(XEMU_TR("Audio"), ICON_FA_VOLUME_HIGH),
+      m_network_button(XEMU_TR("Network"), ICON_FA_NETWORK_WIRED),
+      m_snapshots_button(XEMU_TR("Snapshots"), ICON_FA_CLOCK_ROTATE_LEFT),
+      m_system_button(XEMU_TR("System"), ICON_FA_MICROCHIP),
+      m_about_button(XEMU_TR("About"), ICON_FA_CIRCLE_INFO)
 {
     m_had_focus_last_frame = false;
     m_focus_view = false;

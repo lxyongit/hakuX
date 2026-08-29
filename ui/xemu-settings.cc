@@ -206,6 +206,24 @@ bool xemu_settings_load(void)
     return success;
 }
 
+void xemu_settings_apply_retroapp_machine_files(const char *bootrom_path,
+                                                const char *flashrom_path,
+                                                const char *hdd_path)
+{
+    assert(bootrom_path && *bootrom_path);
+    assert(flashrom_path && *flashrom_path);
+    assert(hdd_path && *hdd_path);
+
+    xemu_settings_set_string(&g_config.sys.files.bootrom_path, bootrom_path);
+    xemu_settings_set_string(&g_config.sys.files.flashrom_path, flashrom_path);
+    xemu_settings_set_string(&g_config.sys.files.hdd_path, hdd_path);
+    g_config.general.show_welcome = false;
+
+    // Persist before QEMU starts. This makes the machine ready on the next
+    // launch as well if a game exits unexpectedly before the atexit handler.
+    xemu_settings_save();
+}
+
 void xemu_settings_save(void)
 {
     FILE *fd = qemu_fopen(xemu_settings_get_path(), "wb");

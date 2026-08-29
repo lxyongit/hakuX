@@ -20,6 +20,7 @@
 #include "common.hh"
 #include "notifications.hh"
 #include "snapshot-manager.hh"
+#include "i18n.hh"
 #include "xemu-hud.h"
 
 SnapshotManager g_snapshot_mgr;
@@ -114,26 +115,26 @@ void SnapshotManager::Draw()
 void SnapshotManager::DrawSnapshotDiscLoadDialog()
 {
     if (m_open_pending) {
-        ImGui::OpenPopup("DVD Drive Image");
+        ImGui::OpenPopup(XEMU_TR("DVD Drive Image"));
         m_open_pending = false;
     }
 
-    if (!ImGui::BeginPopupModal("DVD Drive Image", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (!ImGui::BeginPopupModal(XEMU_TR("DVD Drive Image"), NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
         return;
     }
 
-    ImGui::Text("The DVD drive disc image mounted when the snapshot was created does not appear to be loaded:");
+    ImGui::Text("%s", XEMU_TR("The DVD drive disc image mounted when the snapshot was created does not appear to be loaded:"));
     ImGui::Spacing();
     ImGui::Indent();
-    ImGui::Text("Current Image: %s", m_current_disc_path.length() ? m_current_disc_path.c_str() : "(None)");
-    ImGui::Text("Expected Image: %s", m_target_disc_path.length() ? m_target_disc_path.c_str() : "(None)");
+    ImGui::Text(XEMU_TR("Current Image: %s"), m_current_disc_path.length() ? m_current_disc_path.c_str() : XEMU_TR("(None)"));
+    ImGui::Text(XEMU_TR("Expected Image: %s"), m_target_disc_path.length() ? m_target_disc_path.c_str() : XEMU_TR("(None)"));
     ImGui::Unindent();
     ImGui::Spacing();
-    ImGui::Text("Would you like to load it now?");
+    ImGui::Text("%s", XEMU_TR("Would you like to load it now?"));
     
     ImGui::Dummy(ImVec2(0,16));
 
-    if (ImGui::Button("Yes", ImVec2(120, 0))) {
+    if (ImGui::Button(XEMU_TR("Yes"), ImVec2(120, 0))) {
         xemu_eject_disc(NULL);
         
         Error *err = NULL;
@@ -149,13 +150,13 @@ void SnapshotManager::DrawSnapshotDiscLoadDialog()
     }
     
     ImGui::SameLine();
-    if (ImGui::Button("No", ImVec2(120, 0))) {
+    if (ImGui::Button(XEMU_TR("No"), ImVec2(120, 0))) {
         LoadSnapshot(m_pending_load_name.c_str());
         ImGui::CloseCurrentPopup();
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+    if (ImGui::Button(XEMU_TR("Cancel"), ImVec2(120, 0))) {
         ImGui::CloseCurrentPopup();
     }
 

@@ -26,6 +26,7 @@
 #include "gl-helpers.hh"
 #include "xemu-version.h"
 #include "main-menu.hh"
+#include "i18n.hh"
 
 FirstBootWindow::FirstBootWindow()
 {
@@ -43,21 +44,21 @@ void FirstBootWindow::Draw()
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always);
 
     ImGui::SetNextWindowSize(size, ImGuiCond_Appearing);
-    if (!ImGui::Begin("First Boot", &is_open, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (!ImGui::Begin(XEMU_TR("First Boot"), &is_open, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::End();
         return;
     }
 
     Logo();
 
-    const char *msg = "Configure machine settings to get started";
+    const char *msg = XEMU_TR("Configure machine settings to get started");
     ImGui::SetCursorPosX((ImGui::GetWindowWidth()-ImGui::CalcTextSize(msg).x)/2);
     ImGui::Text("%s", msg);
 
     ImGui::Dummy(ImVec2(0,20*g_viewport_mgr.m_scale));
 
     ImGui::SetCursorPosX((ImGui::GetWindowWidth()-120*g_viewport_mgr.m_scale)/2);
-    if (ImGui::Button("Settings", ImVec2(120*g_viewport_mgr.m_scale, 0))) {
+    if (ImGui::Button(XEMU_TR("Settings"), ImVec2(120*g_viewport_mgr.m_scale, 0))) {
         g_main_menu.ShowSystem();
         g_config.general.show_welcome = false;
     }

@@ -22,6 +22,7 @@
 #include "widgets.hh"
 #include "viewport-manager.hh"
 #include "font-manager.hh"
+#include "i18n.hh"
 #include "xemu-version.h"
 #include "reporting.hh"
 #include "../xemu-settings.h"
@@ -68,7 +69,7 @@ void CompatibilityReporter::Draw()
     };
 
     ImGui::SetNextWindowContentSize(ImVec2(550.0f*g_viewport_mgr.m_scale, 0.0f));
-    if (!ImGui::Begin("Report Compatibility", &is_open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (!ImGui::Begin(XEMU_TR("Report Compatibility"), &is_open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::End();
         return;
     }
@@ -120,7 +121,7 @@ void CompatibilityReporter::Draw()
     ImGui::Columns(2, "", false);
     ImGui::SetColumnWidth(0, ImGui::GetWindowWidth()*0.25);
 
-    ImGui::Text("User Token");
+    ImGui::Text("%s", XEMU_TR("User Token"));
     ImGui::SameLine();
     HelpMarker("This is a unique access token used to authorize submission of the report. To request a token, click 'Get Token'.");
     ImGui::NextColumn();
@@ -134,15 +135,15 @@ void CompatibilityReporter::Draw()
     }
     ImGui::PopFont();
     ImGui::SameLine();
-    if (ImGui::Button("Get Token")) {
+    if (ImGui::Button(XEMU_TR("Get Token"))) {
         SDL_OpenURL("https://reports.xemu.app");
     }
     ImGui::NextColumn();
 
-    ImGui::Text("Playability");
+    ImGui::Text("%s", XEMU_TR("Playability"));
     ImGui::NextColumn();
     ImGui::SetNextItemWidth(item_width);
-    if (ImGui::Combo("###PlayabilityRating", &playability,
+    if (LocalizedCombo("###PlayabilityRating", &playability,
         "Broken\0" "Intro/Menus\0" "Starts\0" "Playable\0" "Perfect\0")) {
         report.compat_rating = playability_names[playability];
         dirty = true;
@@ -153,13 +154,13 @@ void CompatibilityReporter::Draw()
 
     ImGui::Columns(1);
 
-    ImGui::Text("Description");
+    ImGui::Text("%s", XEMU_TR("Description"));
     if (ImGui::InputTextMultiline("###desc", description, sizeof(description), ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 6), 0)) {
         report.compat_comments = description;
         dirty = true;
     }
 
-    if (ImGui::TreeNode("Report Details")) {
+    if (ImGui::TreeNode(XEMU_TR("Report Details"))) {
         ImGui::PushFont(g_font_mgr.m_fixed_width_font);
         if (dirty) {
             serialized_report = report.GetSerializedReport();
@@ -170,7 +171,7 @@ void CompatibilityReporter::Draw()
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("Privacy Disclosure (Please read before submission!)")) {
+    if (ImGui::TreeNode(XEMU_TR("Privacy Disclosure (Please read before submission!)"))) {
         ImGui::TextWrapped(
             "By volunteering to submit a compatibility report, basic information about your "
             "computer is collected, including: your operating system version, CPU model, "
@@ -195,9 +196,9 @@ void CompatibilityReporter::Draw()
 
     if (did_send) {
         if (send_result) {
-            ImGui::Text("Sent! Thanks.");
+            ImGui::Text("%s", XEMU_TR("Sent! Thanks."));
         } else {
-            ImGui::Text("Error: %s (%d)", report.GetResultMessage().c_str(), report.GetResultCode());
+            ImGui::Text(XEMU_TR("Error: %s (%d)"), report.GetResultMessage().c_str(), report.GetResultCode());
         }
         ImGui::SameLine();
     }
@@ -205,7 +206,7 @@ void CompatibilityReporter::Draw()
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()-(120+10)*g_viewport_mgr.m_scale);
 
     ImGui::SetItemDefaultFocus();
-    if (ImGui::Button("Send", ImVec2(120*g_viewport_mgr.m_scale, 0))) {
+    if (ImGui::Button(XEMU_TR("Send"), ImVec2(120*g_viewport_mgr.m_scale, 0))) {
         did_send = true;
         send_result = report.Send();
         if (send_result) {

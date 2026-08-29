@@ -47,6 +47,8 @@ bool ChevronCombo(const char *label, int *current_item,
                   bool (*items_getter)(void *, int, const char **), void *data,
                   int items_count, const char *description = NULL);
 bool ChevronCombo(const char* label, int* current_item, const char* items_separated_by_zeros, const char *description = NULL);
+bool LocalizedCombo(const char *label, int *current_item,
+                    const char *items_separated_by_zeros);
 void Hyperlink(const char *text, const char *url);
 void HelpMarker(const char* desc);
 void Logo();

@@ -20,6 +20,7 @@
 #include "imgui.h"
 #include "misc.hh"
 #include "font-manager.hh"
+#include "i18n.hh"
 
 // Portable helpers
 static int   Stricmp(const char* str1, const char* str2)         { int d; while ((d = toupper(*str2) - toupper(*str1)) == 0 && *str1) { str1++; str2++; } return d; }
@@ -47,7 +48,7 @@ void MonitorWindow::Draw()
     ImVec2 window_pos = ImVec2(0,io.DisplaySize.y/2);
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Appearing);
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y/2), ImGuiCond_Appearing);
-    if (ImGui::Begin("Monitor", &is_open, ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin(XEMU_TR("Monitor"), &is_open, ImGuiWindowFlags_NoCollapse)) {
         const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing(); // 1 separator, 1 input text
         ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar); // Leave room for 1 separator + 1 InputText
 

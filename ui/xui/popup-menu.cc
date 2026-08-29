@@ -32,6 +32,7 @@
 #include "IconsFontAwesome6.h"
 #include "../xemu-snapshots.h"
 #include "main-menu.hh"
+#include "i18n.hh"
 
 PopupMenuItemDelegate::~PopupMenuItemDelegate() {}
 void PopupMenuItemDelegate::PushMenu(PopupMenu &menu) {}
@@ -266,7 +267,7 @@ public:
         for (int i = 0; i < CONFIG_DISPLAY_UI_FIT__COUNT; i++) {
             bool selected = g_config.display.ui.fit == i;
             if (m_focus && selected) ImGui::SetKeyboardFocusHere();
-            if (PopupMenuCheck(values[i], "", selected))
+            if (PopupMenuCheck(XEMU_TR(values[i]), "", selected))
                 g_config.display.ui.fit = i;
         }
 
@@ -288,7 +289,7 @@ public:
         for (int i = 0; i < CONFIG_DISPLAY_UI_ASPECT_RATIO__COUNT; i++) {
             bool selected = g_config.display.ui.aspect_ratio == i;
             if (m_focus && selected) ImGui::SetKeyboardFocusHere();
-            if (PopupMenuCheck(values[i], "", selected))
+            if (PopupMenuCheck(XEMU_TR(values[i]), "", selected))
                 g_config.display.ui.aspect_ratio = i;
         }
 
@@ -311,25 +312,25 @@ public:
         if (m_focus && !m_pop_focus) {
             ImGui::SetKeyboardFocusHere();
         }
-        PopupMenuSlider("Volume", ICON_FA_VOLUME_HIGH, &g_config.audio.volume_limit);
+        PopupMenuSlider(XEMU_TR("Volume"), ICON_FA_VOLUME_HIGH, &g_config.audio.volume_limit);
         bool fs = xemu_is_fullscreen();
-        if (PopupMenuToggle("Fullscreen", ICON_FA_WINDOW_MAXIMIZE, &fs)) {
+        if (PopupMenuToggle(XEMU_TR("Fullscreen"), ICON_FA_WINDOW_MAXIMIZE, &fs)) {
             xemu_toggle_fullscreen();
         }
-        if (PopupMenuSubmenuButton("Display Mode", ICON_FA_EXPAND)) {
+        if (PopupMenuSubmenuButton(XEMU_TR("Display Mode"), ICON_FA_EXPAND)) {
             nav.PushFocus();
             nav.PushMenu(display_mode);
         }
-        if (PopupMenuSubmenuButton("Aspect Ratio", ICON_FA_EXPAND)) {
+        if (PopupMenuSubmenuButton(XEMU_TR("Aspect Ratio"), ICON_FA_EXPAND)) {
             nav.PushFocus();
             nav.PushMenu(aspect_ratio);
         }
-        if (PopupMenuButton("Snapshots...", ICON_FA_CLOCK_ROTATE_LEFT)) {
+        if (PopupMenuButton(XEMU_TR("Snapshots..."), ICON_FA_CLOCK_ROTATE_LEFT)) {
             nav.ClearMenuStack();
             g_scene_mgr.PushScene(g_main_menu);
             g_main_menu.ShowSnapshots();
         }
-        if (PopupMenuButton("All settings...", ICON_FA_SLIDERS)) {
+        if (PopupMenuButton(XEMU_TR("All settings..."), ICON_FA_SLIDERS)) {
             nav.ClearMenuStack();
             g_scene_mgr.PushScene(g_main_menu);
         }
@@ -368,7 +369,7 @@ public:
         }
 
         if (sorted_file_names.size() == 0) {
-            if (PopupMenuButton("No games found", ICON_FA_SLIDERS)) {
+            if (PopupMenuButton(XEMU_TR("No games found"), ICON_FA_SLIDERS)) {
                 nav.ClearMenuStack();
                 g_scene_mgr.PushScene(g_main_menu);
             }
@@ -421,46 +422,46 @@ public:
 
         bool running = runstate_is_running();
         if (running) {
-            if (PopupMenuButton("Pause", ICON_FA_CIRCLE_PAUSE)) {
+            if (PopupMenuButton(XEMU_TR("Pause"), ICON_FA_CIRCLE_PAUSE)) {
                 ActionTogglePause();
                 refocus_first_item = true;
             }
         } else {
-            if (PopupMenuButton("Resume", ICON_FA_CIRCLE_PLAY)) {
+            if (PopupMenuButton(XEMU_TR("Resume"), ICON_FA_CIRCLE_PLAY)) {
                 ActionTogglePause();
                 refocus_first_item = true;
             }
         }
-        if (PopupMenuButton("Screenshot", ICON_FA_CAMERA)) {
+        if (PopupMenuButton(XEMU_TR("Screenshot"), ICON_FA_CAMERA)) {
             ActionScreenshot();
             pop = true;
         }
-        if (PopupMenuButton("Save Snapshot", ICON_FA_DOWNLOAD)) {
+        if (PopupMenuButton(XEMU_TR("Save Snapshot"), ICON_FA_DOWNLOAD)) {
             xemu_snapshots_save(NULL, NULL);
-            xemu_queue_notification("Created new snapshot");
+            xemu_queue_notification(XEMU_TR("Created new snapshot"));
             pop = true;
         }
-        if (PopupMenuSubmenuButton("Games", ICON_FA_GAMEPAD)) {
+        if (PopupMenuSubmenuButton(XEMU_TR("Games"), ICON_FA_GAMEPAD)) {
             nav.PushFocus();
             nav.PushMenu(games);
         }
-        if (PopupMenuButton("Eject Disc", ICON_FA_EJECT)) {
+        if (PopupMenuButton(XEMU_TR("Eject Disc"), ICON_FA_EJECT)) {
             ActionEjectDisc();
             pop = true;
         }
-        if (PopupMenuButton("Load Disc...", ICON_FA_COMPACT_DISC)) {
+        if (PopupMenuButton(XEMU_TR("Load Disc..."), ICON_FA_COMPACT_DISC)) {
             ActionLoadDisc();
             pop = true;
         }
-        if (PopupMenuSubmenuButton("Settings", ICON_FA_GEARS)) {
+        if (PopupMenuSubmenuButton(XEMU_TR("Settings"), ICON_FA_GEARS)) {
             nav.PushFocus();
             nav.PushMenu(settings);
         }
-        if (PopupMenuButton("Restart", ICON_FA_ARROWS_ROTATE)) {
+        if (PopupMenuButton(XEMU_TR("Restart"), ICON_FA_ARROWS_ROTATE)) {
             ActionReset();
             pop = true;
         }
-        if (PopupMenuButton("Exit", ICON_FA_POWER_OFF)) {
+        if (PopupMenuButton(XEMU_TR("Exit"), ICON_FA_POWER_OFF)) {
             ActionShutdown();
             pop = true;
         }

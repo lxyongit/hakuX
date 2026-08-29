@@ -92,6 +92,9 @@ const char *bound_drivers[4] = { DRIVER_DUKE, DRIVER_DUKE, DRIVER_DUKE,
                                  DRIVER_DUKE };
 int test_mode;
 
+static ControllerState *keyboard_controller;
+static bool keyboard_auto_bound[4];
+
 static const char **port_index_to_settings_key_map[] = {
     &g_config.input.bindings.port1,
     &g_config.input.bindings.port2,
@@ -260,6 +263,18 @@ static const char *get_bound_driver(int port)
 
 static const int port_map[4] = { 3, 4, 1, 2 };
 
+static void xemu_input_bind_keyboard_fallback(int port)
+{
+    assert(port >= 0 && port < 4);
+    if (!keyboard_controller || xemu_input_get_bound(port)) {
+        return;
+    }
+
+    xemu_input_bind(port, keyboard_controller, 0);
+    keyboard_auto_bound[port] = true;
+    xemu_input_rebind_xmu(port);
+}
+
 void xemu_input_init(void)
 {
     if (g_config.input.background_input_capture) {
@@ -281,6 +296,7 @@ void xemu_input_init(void)
     new_con->peripheral_types[1] = PERIPHERAL_NONE;
     new_con->peripherals[0] = NULL;
     new_con->peripherals[1] = NULL;
+    keyboard_controller = new_con;
 
     for (int i = 0; i < 25; i++) {
         static const char *format_str =
@@ -305,6 +321,15 @@ void xemu_input_init(void)
         snprintf(buf, sizeof(buf), "Connected '%s' to port %d", new_con->name, port+1);
         xemu_queue_notification(buf);
         xemu_input_rebind_xmu(port);
+    } else {
+        int gamepad_count = 0;
+        SDL_JoystickID *gamepads = SDL_GetGamepads(&gamepad_count);
+        if (gamepad_count == 0) {
+            // Keep the saved device preference intact. The keyboard is only a
+            // temporary fallback until a gamepad is connected.
+            xemu_input_bind_keyboard_fallback(0);
+        }
+        SDL_free(gamepads);
     }
 
     QTAILQ_INSERT_TAIL(&available_controllers, new_con, entry);
@@ -402,8 +427,10 @@ void xemu_input_process_sdl_events(const SDL_Event *event)
             if (port < 0) {
                 // No (additional) default mappings
                 break;
-            } else if (!xemu_input_get_bound(port)) {
+            } else if (!xemu_input_get_bound(port) ||
+                       keyboard_auto_bound[port]) {
                 xemu_input_bind(port, new_con, 0);
+                keyboard_auto_bound[port] = false;
                 did_bind = true;
                 break;
             } else {
@@ -415,8 +442,9 @@ void xemu_input_process_sdl_events(const SDL_Event *event)
         // Try to bind to any open port, and if so remember the binding
         if (!did_bind && g_config.input.auto_bind) {
             for (port = 0; port < 4; port++) {
-                if (!xemu_input_get_bound(port)) {
+                if (!xemu_input_get_bound(port) || keyboard_auto_bound[port]) {
                     xemu_input_bind(port, new_con, 1);
+                    keyboard_auto_bound[port] = false;
                     did_bind = true;
                     break;
                 }
@@ -450,7 +478,9 @@ void xemu_input_process_sdl_events(const SDL_Event *event)
 
                     // Unbind the controller, but don't save the unbinding in
                     // case the controller is reconnected
-                    xemu_input_bind(iter->bound, NULL, 0);
+                    int port = iter->bound;
+                    xemu_input_bind(port, NULL, 0);
+                    xemu_input_bind_keyboard_fallback(port);
                 }
 
                 // Unlink
@@ -655,6 +685,10 @@ void xemu_input_bind(int index, ControllerState *state, int save)
 {
     // FIXME: Attempt to disable rumble when unbinding so it's not left
     // in rumble mode
+
+    if (save) {
+        keyboard_auto_bound[index] = false;
+    }
 
     // Unbind existing controller
     if (bound_controllers[index]) {

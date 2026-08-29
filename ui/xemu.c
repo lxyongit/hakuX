@@ -1272,6 +1272,52 @@ static void init_sdl_app_metadata(void)
                                "https://xemu.app");
 }
 
+struct retroapp_machine_files {
+    const char *bootrom_path;
+    const char *flashrom_path;
+    const char *hdd_path;
+};
+
+static const char *take_retroapp_argument(int argc, char **argv,
+                                          const char *option)
+{
+    for (int i = 1; i < argc; i++) {
+        if (argv[i] && strcmp(argv[i], option) == 0) {
+            argv[i] = NULL;
+            if (i < argc - 1 && argv[i + 1]) {
+                const char *value = argv[i + 1];
+                argv[i + 1] = NULL;
+                return value;
+            }
+            return NULL;
+        }
+    }
+    return NULL;
+}
+
+static bool apply_retroapp_machine_files(int argc, char **argv)
+{
+    struct retroapp_machine_files files = {
+        .bootrom_path = take_retroapp_argument(argc, argv, "--retroapp-mcpx"),
+        .flashrom_path = take_retroapp_argument(argc, argv, "--retroapp-bios"),
+        .hdd_path = take_retroapp_argument(argc, argv, "--retroapp-hdd"),
+    };
+    bool has_any = files.bootrom_path || files.flashrom_path || files.hdd_path;
+    if (!has_any) {
+        return true;
+    }
+    if (!files.bootrom_path || !files.flashrom_path || !files.hdd_path) {
+        fprintf(stderr,
+                "RetroApp launch requires --retroapp-mcpx, --retroapp-bios, "
+                "and --retroapp-hdd.\n");
+        return false;
+    }
+
+    xemu_settings_apply_retroapp_machine_files(
+        files.bootrom_path, files.flashrom_path, files.hdd_path);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     QemuThread thread;
@@ -1328,6 +1374,10 @@ int main(int argc, char **argv)
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
             "Failed to load xemu config file", err_msg,
             m_window);
+        SDL_Quit();
+        exit(1);
+    }
+    if (!apply_retroapp_machine_files(argc, argv)) {
         SDL_Quit();
         exit(1);
     }

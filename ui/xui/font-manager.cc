@@ -17,7 +17,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "font-manager.hh"
+#include "i18n.hh"
 #include "viewport-manager.hh"
+
+#include <filesystem>
 
 #include "data/Roboto-Medium.ttf.h"
 #include "data/RobotoCondensed-Regular.ttf.h"
@@ -41,7 +44,30 @@ void FontManager::Rebuild()
     float scale = g_viewport_mgr.m_scale;
     float pixel_density = g_viewport_mgr.m_pixel_density;
 
-    {
+    const char *chinese_font_path = xemu_ui_chinese_font_path();
+    const bool use_chinese_font =
+        chinese_font_path && std::filesystem::exists(chinese_font_path);
+    if (use_chinese_font) {
+        ImFontGlyphRangesBuilder glyph_builder;
+        glyph_builder.AddRanges(io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+        xemu_ui_add_chinese_glyphs(glyph_builder);
+        m_chinese_glyph_ranges.clear();
+        glyph_builder.BuildRanges(&m_chinese_glyph_ranges);
+        ImFontConfig config;
+        config.RasterizerDensity = pixel_density;
+        m_default_font = io.Fonts->AddFontFromFileTTF(
+            chinese_font_path, 16.0f * scale, &config,
+            m_chinese_glyph_ranges.Data);
+        m_menu_font_small = io.Fonts->AddFontFromFileTTF(
+            chinese_font_path, 22.0f * scale, &config,
+            m_chinese_glyph_ranges.Data);
+        m_menu_font_medium = io.Fonts->AddFontFromFileTTF(
+            chinese_font_path, 26.0f * scale, &config,
+            m_chinese_glyph_ranges.Data);
+        m_menu_font = io.Fonts->AddFontFromFileTTF(
+            chinese_font_path, 34.0f * scale, &config,
+            m_chinese_glyph_ranges.Data);
+    } else {
         ImFontConfig config;
         config.FontDataOwnedByAtlas = false;
         config.RasterizerDensity = pixel_density;
@@ -51,6 +77,12 @@ void FontManager::Rebuild()
         m_menu_font_small = io.Fonts->AddFontFromMemoryTTF(
             (void *)RobotoCondensed_Regular_data, RobotoCondensed_Regular_size,
             22.0f * scale, &config);
+        m_menu_font_medium = io.Fonts->AddFontFromMemoryTTF(
+            (void *)RobotoCondensed_Regular_data, RobotoCondensed_Regular_size,
+            26.0f * scale, &config);
+        m_menu_font = io.Fonts->AddFontFromMemoryTTF(
+            (void *)RobotoCondensed_Regular_data, RobotoCondensed_Regular_size,
+            34.0f * scale, &config);
     }
     {
         ImFontConfig config;
@@ -64,17 +96,6 @@ void FontManager::Rebuild()
         io.Fonts->AddFontFromMemoryTTF((void *)abxy_data, abxy_size,
                                        40.0f * scale,
                                        &config, icon_ranges);
-    }
-    {
-        ImFontConfig config;
-        config.FontDataOwnedByAtlas = false;
-        config.RasterizerDensity = pixel_density;
-        m_menu_font_medium = io.Fonts->AddFontFromMemoryTTF(
-            (void *)RobotoCondensed_Regular_data, RobotoCondensed_Regular_size,
-            26.0f * scale, &config);
-        m_menu_font = io.Fonts->AddFontFromMemoryTTF(
-            (void *)RobotoCondensed_Regular_data, RobotoCondensed_Regular_size,
-            34.0f * scale, &config);
     }
     {
         ImFontConfig config;

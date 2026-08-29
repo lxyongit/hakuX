@@ -20,7 +20,9 @@
 #include "debug.hh"
 #include "common.hh"
 #include "misc.hh"
+#include "widgets.hh"
 #include "font-manager.hh"
+#include "i18n.hh"
 #include "viewport-manager.hh"
 
 #define MAX_VOICES 256
@@ -35,7 +37,7 @@ void DebugApuWindow::Draw()
         return;
 
     ImGui::SetNextWindowContentSize(ImVec2(600.0f*g_viewport_mgr.m_scale, 0.0f));
-    if (!ImGui::Begin("Audio Debug", &m_is_open,
+    if (!ImGui::Begin(XEMU_TR("Audio Debug"), &m_is_open,
                       ImGuiWindowFlags_NoCollapse |
                           ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::End();
@@ -110,43 +112,42 @@ void DebugApuWindow::Draw()
         const struct McpxApuDebugVoice *voice = &dbg->vp.v[voice_info];
         ImGui::BeginTooltip();
         bool is_paused = voice->paused;
-        ImGui::Text("Voice 0x%x/%d %s", voice_info, voice_info, is_paused ? "(Paused)" : "");
+        ImGui::Text(XEMU_TR("Voice 0x%x/%d %s"), voice_info, voice_info, is_paused ? XEMU_TR("(Paused)") : "");
         ImGui::SameLine();
-        ImGui::Text(voice->stereo ? "Stereo" : "Mono");
+        ImGui::Text("%s", XEMU_TR(voice->stereo ? "Stereo" : "Mono"));
 
         ImGui::Separator();
         ImGui::PushFont(g_font_mgr.m_fixed_width_font);
 
-        const char *noyes[2] = { "NO", "YES" };
-        ImGui::Text("Stream: %-3s Loop: %-3s Persist: %-3s Multipass: %-3s "
-                    "Linked: %-3s",
+        const char *noyes[2] = { XEMU_TR("NO"), XEMU_TR("YES") };
+        ImGui::Text(XEMU_TR("Stream: %-3s Loop: %-3s Persist: %-3s Multipass: %-3s Linked: %-3s"),
                     noyes[voice->stream], noyes[voice->loop],
                     noyes[voice->persist], noyes[voice->multipass],
                     noyes[voice->linked]);
 
-        const char *cs[4] = { "1 byte", "2 bytes", "ADPCM", "4 bytes" };
+        const char *cs[4] = { XEMU_TR("1 byte"), XEMU_TR("2 bytes"), "ADPCM", XEMU_TR("4 bytes") };
         const char *ss[4] = {
-            "Unsigned 8b PCM",
-            "Signed 16b PCM",
-            "Signed 24b PCM",
-            "Signed 32b PCM"
+            XEMU_TR("Unsigned 8b PCM"),
+            XEMU_TR("Signed 16b PCM"),
+            XEMU_TR("Signed 24b PCM"),
+            XEMU_TR("Signed 32b PCM")
         };
 
         assert(voice->container_size < 4);
         assert(voice->sample_size < 4);
-        const char *spb_or_bin_label = "Samples per Block";
+        const char *spb_or_bin_label = XEMU_TR("Samples per Block");
         unsigned int spb_or_bin = voice->samples_per_block;
         if (voice->multipass) {
-            spb_or_bin_label = "Multipass Bin";
+            spb_or_bin_label = XEMU_TR("Multipass Bin");
             spb_or_bin = voice->multipass_bin;
         }
-        ImGui::Text("Container Size: %s, Sample Size: %s, %s: %d",
+        ImGui::Text(XEMU_TR("Container Size: %s, Sample Size: %s, %s: %d"),
                     cs[voice->container_size], ss[voice->sample_size],
                     spb_or_bin_label, spb_or_bin);
-        ImGui::Text("Rate: %f (%d Hz)", voice->rate, (int)(48000.0/voice->rate));
-        ImGui::Text("EBO=%d CBO=%d LBO=%d BA=%x",
+        ImGui::Text(XEMU_TR("Rate: %f (%d Hz)"), voice->rate, (int)(48000.0/voice->rate));
+        ImGui::Text(XEMU_TR("EBO=%d CBO=%d LBO=%d BA=%x"),
             voice->ebo, voice->cbo, voice->lbo, voice->ba);
-        ImGui::Text("Mix: ");
+        ImGui::Text("%s", XEMU_TR("Mix: "));
         for (int i = 0; i < 8; i++) {
             if (i == 4) ImGui::Text("     ");
             ImGui::SameLine();
@@ -166,11 +167,11 @@ void DebugApuWindow::Draw()
         int mon = mcpx_apu_debug_get_monitor();
         if (mon == MCPX_APU_DEBUG_MON_VP) {
             if (voice->multipass_dst_voice != 0xFFFF) {
-                ImGui::Text("Multipass Dest Voice: 0x%02x",
+                ImGui::Text(XEMU_TR("Multipass Dest Voice: 0x%02x"),
                             voice->multipass_dst_voice);
             }
             if (voice->multipass) {
-                ImGui::Text("Multipass Src Voices:");
+                ImGui::Text("%s", XEMU_TR("Multipass Src Voices:"));
                 int n = 0;
 
                 for (int i = 0; i < MAX_VOICES; i++) {
@@ -203,40 +204,40 @@ void DebugApuWindow::Draw()
 
     static int mon = 0;
     mon = (int)mcpx_apu_debug_get_monitor();
-    if (ImGui::Combo("Monitor", &mon, "AC97\0VP Only\0GP Only\0EP Only\0GP/EP if enabled\0")) {
+    if (LocalizedCombo(XEMU_TR("Monitor"), &mon, "AC97\0VP Only\0GP Only\0EP Only\0GP/EP if enabled\0")) {
         mcpx_apu_debug_set_monitor((McpxApuDebugMonitorPoint)mon);
     }
 
-    ImGui::Checkbox("JIT Engine\n", &g_config.audio.use_dsp_jit);
+    ImGui::Checkbox(XEMU_TR("JIT Engine\n"), &g_config.audio.use_dsp_jit);
 
     static bool gp_realtime;
     gp_realtime = dbg->gp_realtime;
-    if (ImGui::Checkbox("GP Realtime\n", &gp_realtime)) {
+    if (ImGui::Checkbox(XEMU_TR("GP Realtime\n"), &gp_realtime)) {
         mcpx_apu_debug_set_gp_realtime_enabled(gp_realtime);
     }
 
     static bool ep_realtime;
     ep_realtime = dbg->ep_realtime;
-    if (ImGui::Checkbox("EP Realtime\n", &ep_realtime)) {
+    if (ImGui::Checkbox(XEMU_TR("EP Realtime\n"), &ep_realtime)) {
         mcpx_apu_debug_set_ep_realtime_enabled(ep_realtime);
     }
 
-    ImGui::Checkbox("HRTF Filtering\n", &g_config.audio.hrtf);
+    ImGui::Checkbox(XEMU_TR("HRTF Filtering\n"), &g_config.audio.hrtf);
 
     ImGui::PushFont(g_font_mgr.m_fixed_width_font);
 
     bool color = (dbg->utilization > 0.9);
     if (color) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1,0,0,1));
-    ImGui::Text("Utilization: %.2f%%", (dbg->utilization*100));
+    ImGui::Text(XEMU_TR("Utilization: %.2f%%"), (dbg->utilization*100));
     if (color) ImGui::PopStyleColor();
 
-    ImGui::Text("Frames:      %04d", dbg->frames_processed);
-    if (ImGui::TreeNode("Throttle")) {
-        ImGui::Text("Deviation: %" PRId64 "/%" PRId64 "/%" PRId64 " us",
+    ImGui::Text(XEMU_TR("Frames:      %04d"), dbg->frames_processed);
+    if (ImGui::TreeNode(XEMU_TR("Throttle"))) {
+        ImGui::Text(XEMU_TR("Deviation: %" PRId64 "/%" PRId64 "/%" PRId64 " us"),
                     dbg->throttle.deviation.min_us,
                     dbg->throttle.deviation.avg_us,
                     dbg->throttle.deviation.max_us);
-        ImGui::Text("Latency:   %.1f/%.1f/%.1f ms",
+        ImGui::Text(XEMU_TR("Latency:   %.1f/%.1f/%.1f ms"),
                     dbg->throttle.latency.min_ms,
                     dbg->throttle.latency.avg_ms,
                     dbg->throttle.latency.max_ms);
@@ -245,7 +246,7 @@ void DebugApuWindow::Draw()
             float scale = fmax(high, dbg->throttle.latency.max_ms);
             float h = ImGui::GetFrameHeight() * 0.25f;
 
-            ImGui::Text("Queue/Pacing:");
+            ImGui::Text("%s", XEMU_TR("Queue/Pacing:"));
             ImVec2 pos = ImGui::GetCursorScreenPos();
             float w = ImGui::GetContentRegionAvail().x;
             float low_x = pos.x + w * (dbg->throttle.latency.low_ms / scale);
@@ -297,8 +298,8 @@ void DebugApuWindow::Draw()
         }
         ImGui::TreePop();
     }
-    ImGui::Text("VP:          %4d us", dbg->vp.total_worker_time_us);
-    if (ImGui::TreeNode("VP Workers")) {
+    ImGui::Text(XEMU_TR("VP:          %4d us"), dbg->vp.total_worker_time_us);
+    if (ImGui::TreeNode(XEMU_TR("VP Workers"))) {
         ImGui::Text(" W: #  us");
         ImGui::SameLine();
         ImGui::Text(" W: #  us");
@@ -309,8 +310,8 @@ void DebugApuWindow::Draw()
         }
         ImGui::TreePop();
     }
-    ImGui::Text("GP Cycles:   %04d", dbg->gp.cycles);
-    ImGui::Text("EP Cycles:   %04d", dbg->ep.cycles);
+    ImGui::Text(XEMU_TR("GP Cycles:   %04d"), dbg->gp.cycles);
+    ImGui::Text(XEMU_TR("EP Cycles:   %04d"), dbg->ep.cycles);
 
     ImGui::PopFont();
     ImGui::Columns(1);
@@ -376,7 +377,7 @@ void DebugVideoWindow::Draw()
     }
     m_prev_scale = g_viewport_mgr.m_scale;
 
-    if (ImGui::Begin("Video Debug", &m_is_open)) {
+    if (ImGui::Begin(XEMU_TR("Video Debug"), &m_is_open)) {
         double x_start, x_end;
         static ImPlotAxisFlags rt_axis = ImPlotAxisFlags_NoTickLabels;
         ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(5,5));
@@ -426,7 +427,7 @@ void DebugVideoWindow::Draw()
         ImGui::SetNextItemOpen(g_config.display.debug.video.advanced_tree_state,
                                ImGuiCond_Once);
         g_config.display.debug.video.advanced_tree_state =
-            ImGui::TreeNode("Advanced");
+            ImGui::TreeNode(XEMU_TR("Advanced"));
 
         if (g_config.display.debug.video.advanced_tree_state) {
             ImGui::SetNextWindowBgAlpha(alpha);

@@ -18,6 +18,7 @@
 //
 #include "notifications.hh"
 #include "common.hh"
+#include "i18n.hh"
 
 #include "../xemu-notifications.h"
 
@@ -67,18 +68,18 @@ void NotificationManager::Draw()
     ImGuiIO& io = ImGui::GetIO();
 
     if (m_error_queue.size() > 0) {
-        ImGui::OpenPopup("Error");
+        ImGui::OpenPopup(XEMU_TR("Error"));
         ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x/2, io.DisplaySize.y/2),
                                 ImGuiCond_Always, ImVec2(0.5, 0.5));
     }
-    if (ImGui::BeginPopupModal("Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::BeginPopupModal(XEMU_TR("Error"), NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Text("%s", m_error_queue[0]);
         ImGui::Dummy(ImVec2(0,16));
         ImGui::SetItemDefaultFocus();
         ImGuiStyle &style = ImGui::GetStyle();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth()-(120+2*style.FramePadding.x));
-        if (ImGui::Button("Ok", ImVec2(120, 0))) {
+        if (ImGui::Button(XEMU_TR("Ok"), ImVec2(120, 0))) {
             ImGui::CloseCurrentPopup();
             free((void*)m_error_queue[0]);
             m_error_queue.pop_front();

@@ -33,6 +33,9 @@ public:
     ImFont *m_menu_font;
     ImFont *m_menu_font_small;
     ImFont *m_menu_font_medium;
+    // ImGui stores glyph-range pointers in the atlas configuration until it
+    // has finished building the texture, so this storage must outlive Rebuild.
+    ImVector<ImWchar> m_chinese_glyph_ranges;
     // ImFont *m_big_state_icon_font;
     float m_last_viewport_scale;
     float m_last_pixel_density;

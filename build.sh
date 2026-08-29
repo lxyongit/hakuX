@@ -38,6 +38,20 @@ package_macos() {
         -p "@executable_path/${lib_rpath}/" \
         -s ${PWD}/macos-libs/${target_arch}/opt/local/lib/
 
+    # dylibbundler can add the same rpath once per copied dependency. Newer
+    # macOS dyld rejects duplicate LC_RPATH commands at process launch.
+    local seen_rpaths=''
+    while IFS= read -r rpath; do
+      if printf '%s\n' "${seen_rpaths}" | grep -Fqx "${rpath}"; then
+        install_name_tool -delete_rpath "${rpath}" "${exe_path}"
+      else
+        seen_rpaths="${seen_rpaths}"$'\n'"${rpath}"
+      fi
+    done < <(otool -l "${exe_path}" | awk '
+      $1 == "cmd" && $2 == "LC_RPATH" { in_rpath = 1; next }
+      in_rpath && $1 == "path" { print $2; in_rpath = 0 }
+    ')
+
     # Fixup some paths dylibbundler missed
     for dep in $(otool -L "$exe_path" | grep -e '/opt/local/' | cut -d' ' -f1); do
       dep_basename="$(basename $dep)"
@@ -76,6 +90,28 @@ package_macos() {
     plutil -replace CFBundleVersion            -string "${xemu_version}" dist/xemu.app/Contents/Info.plist
 
     codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - "${exe_path}"
+
+    # Some libraries are resolved outside the MacPorts bundle on local macOS
+    # builds. Supply their version entries expected by gen-license.py.
+    local version_file="macos-libs/${target_arch}/INSTALLED"
+    record_license_version() {
+        local package_key="$1"
+        local brew_formula="$2"
+        local fallback_version="$3"
+        if grep -q "^${package_key}=" "${version_file}"; then
+            return
+        fi
+        local package_version
+        package_version="$(brew list --versions "${brew_formula}" | awk 'NR == 1 { print $2 }')"
+        if [[ -z "${package_version}" && -z "${fallback_version}" ]]; then
+            echo "Homebrew ${brew_formula} is required to generate LICENSE.txt" >&2
+            return 1
+        fi
+        printf '%s=%s\n' "${package_key}" \
+            "${package_version:-${fallback_version}}" >> "${version_file}"
+    }
+    record_license_version gettext-runtime gettext ''
+    record_license_version libiconv libiconv system-provided
     python3 ./scripts/gen-license.py --version-file=macos-libs/$target_arch/INSTALLED > dist/LICENSE.txt
 }
 
@@ -228,7 +264,10 @@ case "$platform" in # Adjust compilation options based on platform
                         -arch ${target_arch} \
                         -isysroot ${sdk}"
         sys_ldflags='-headerpad_max_install_names'
-        export PKG_CONFIG_LIBDIR="${lib_prefix}/lib/pkgconfig"
+        # Preserve additional pkg-config directories supplied by a caller.
+        # build-macos.sh uses this for Homebrew's header-only nlohmann_json,
+        # while the MacPorts directory remains first for bundled libraries.
+        export PKG_CONFIG_LIBDIR="${lib_prefix}/lib/pkgconfig${PKG_CONFIG_LIBDIR:+:${PKG_CONFIG_LIBDIR}}"
         opts="$opts --disable-cocoa --cross-prefix="
         postbuild='package_macos'
         ;;

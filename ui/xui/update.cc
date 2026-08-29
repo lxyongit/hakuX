@@ -19,6 +19,7 @@
 #include "common.hh"
 #include "qemu/http.h"
 #include "update.hh"
+#include "i18n.hh"
 #include "viewport-manager.hh"
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,7 +60,7 @@ void AutoUpdateWindow::Draw()
 {
     if (!is_open) return;
     ImGui::SetNextWindowContentSize(ImVec2(550.0f*g_viewport_mgr.m_scale, 0.0f));
-    if (!ImGui::Begin("Update", &is_open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (!ImGui::Begin(XEMU_TR("Update"), &is_open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::End();
         return;
     }
@@ -82,20 +83,20 @@ void AutoUpdateWindow::Draw()
     };
 
     if (updater.get_status() == UPDATER_IDLE) {
-        ImGui::Text("%s", available_msg[updater.get_update_availability()]);
+        ImGui::Text("%s", XEMU_TR(available_msg[updater.get_update_availability()]));
     } else {
-        ImGui::Text("%s", status_msg[updater.get_status()]);
+        ImGui::Text("%s", XEMU_TR(status_msg[updater.get_status()]));
     }
 
     if (updater.is_update_available()) {
         ImGui::Dummy(ImVec2(0.0f, ImGui::GetStyle().WindowPadding.y));
 
-        ImGui::Text("Current version: %s", xemu_version);
-        ImGui::Text("Latest version: %s", updater.get_release_version().c_str());
+        ImGui::Text(XEMU_TR("Current version: %s"), xemu_version);
+        ImGui::Text(XEMU_TR("Latest version: %s"), updater.get_release_version().c_str());
 
         ImGui::Dummy(ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y));
 
-        if (ImGui::SmallButton("Release notes...")) {
+        if (ImGui::SmallButton(XEMU_TR("Release notes..."))) {
             SDL_OpenURL(updater.get_release_url().c_str());
         }
     }
@@ -115,20 +116,20 @@ void AutoUpdateWindow::Draw()
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()-bw);
 
     if (updater.is_checking_for_update() || updater.is_updating()) {
-        if (ImGui::Button("Cancel", ImVec2(w, 0))) {
+        if (ImGui::Button(XEMU_TR("Cancel"), ImVec2(w, 0))) {
             updater.cancel();
         }
     } else {
         if (updater.is_pending_restart()) {
-            if (ImGui::Button("Restart", ImVec2(w, 0))) {
+            if (ImGui::Button(XEMU_TR("Restart"), ImVec2(w, 0))) {
                 updater.restart_to_updated();
             }
         } else if (updater.is_update_available()) {
-            if (ImGui::Button("Update", ImVec2(w, 0))) {
+            if (ImGui::Button(XEMU_TR("Update"), ImVec2(w, 0))) {
                 updater.update();
             }
         } else {
-            if (ImGui::Button("Check for Update", ImVec2(w, 0))) {
+            if (ImGui::Button(XEMU_TR("Check for Update"), ImVec2(w, 0))) {
                 updater.check_for_update();
             }
         }

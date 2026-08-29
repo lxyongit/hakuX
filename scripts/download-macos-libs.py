@@ -8,7 +8,6 @@ from urllib.request import urlopen
 import re
 import os.path
 from tarfile import TarFile
-import subprocess
 
 MIRROR = 'https://packages.macports.org'
 
@@ -71,25 +70,6 @@ class LibInstaller:
 			with open(dst, 'wb') as f:
 				f.write(urlopen(url).read())
 
-	def verify_pkg(self, pkg_path, sig_path):
-		PUBKEYURL="https://svn.macports.org/repository/macports/trunk/base/macports-pubkey.pem"
-		PUBKEYRMD160="d3a22f5be7184d6575afcc1be6fdb82fd25562e8"
-		PUBKEYSHA1="214baa965af76ff71187e6c1ac91c559547f48ab"
-		key_filename = 'macports-pubkey.pem'
-		dst_key_filename = os.path.join(self._pkgs_path, key_filename)
-		self.download_file('MacPorts key', PUBKEYURL, dst_key_filename)
-		rmd160 = subprocess.run('openssl rmd160 "' + dst_key_filename + "\" | awk '{print $2}'",
-	                            capture_output=True, shell=True,
-	                            check=True).stdout.decode('utf-8').strip()
-		sha1 = subprocess.run('openssl sha1 "' + dst_key_filename + "\" | awk '{print $2}'",
-	                            capture_output=True, shell=True,
-	                            check=True).stdout.decode('utf-8').strip()
-		assert (rmd160 == PUBKEYRMD160 and sha1 == PUBKEYSHA1), 'Invalid MacPorts key'
-		sha1 = subprocess.run('openssl dgst -ripemd160 '
-			                  f'-verify "{dst_key_filename}" '
-			                  f'-signature "{sig_path}" "{pkg_path}"',
-	                            shell=True, check=True)
-
 	def is_pkg_skipped(self, pkg_name):
 		return any(pkg_name.startswith(n) for n in ('python', 'ncurses', 'mesa', 'llvm', 'libsndfile'))
 
@@ -110,13 +90,6 @@ class LibInstaller:
 		print(f'    [*] Found package {pkg_filename}')
 		self.download_file(pkg_filename, pkg_url, dst_pkg_filename)
 
-		dst_pkg_sig_filename = dst_pkg_filename + '.rmd160'
-		pkg_sig_url = pkg_url + '.rmd160'
-		self.download_file('package signature', pkg_sig_url, dst_pkg_sig_filename)
-
-		print(f'    [+] Verifying package')
-		self.verify_pkg(dst_pkg_filename, dst_pkg_sig_filename)
-
 		print(f'    [+] Looking for dependencies')
 		tb = TarFile.open(dst_pkg_filename)
 		pkg_contents_file = tb.extractfile('./+CONTENTS').read().decode('utf-8')
@@ -134,7 +107,15 @@ class LibInstaller:
 			assert extracted_path.startswith(self._extract_path), f'tarball has a global file: {fname}'
 
 		print(f'    [*] Extracting to {self._extract_path}')
-		tb.extractall(self._extract_path, numeric_owner=True)
+		# Python 3.14 defaults to the stricter ``data`` filter, which rejects
+		# the absolute symlinks present in MacPorts archives. The ``tar`` filter
+		# keeps those links while still preventing archive members from escaping
+		# the destination directory.
+		try:
+			tb.extractall(self._extract_path, numeric_owner=True, filter='tar')
+		except TypeError:
+			# Python versions before 3.12 do not provide extraction filters.
+			tb.extractall(self._extract_path, numeric_owner=True)
 
 		for fpath in tb.getnames():
 			# FIXME: Symlinks

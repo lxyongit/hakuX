@@ -19,6 +19,7 @@
 #include "widgets.hh"
 #include "misc.hh"
 #include "font-manager.hh"
+#include "i18n.hh"
 #include "viewport-manager.hh"
 #include "ui/xemu-os-utils.h"
 #include "gl-helpers.hh"
@@ -47,7 +48,7 @@ void SectionTitle(const char *title)
 {
     ImGui::Spacing();
     ImGui::PushFont(g_font_mgr.m_menu_font_medium);
-    ImGui::Text("%s", title);
+    ImGui::Text("%s", XEMU_TR(title));
     ImGui::PopFont();
     Separator();
 }
@@ -73,6 +74,8 @@ float GetWidgetTitleDescriptionHeight(const char *title,
 void WidgetTitleDescription(const char *title, const char *description,
                             ImVec2 pos)
 {
+    title = XEMU_TR(title);
+    description = XEMU_TR(description);
     ImDrawList *draw_list = ImGui::GetWindowDrawList();
     ImGuiStyle &style = ImGui::GetStyle();
 
@@ -468,11 +471,23 @@ static bool Items_SingleStringGetter(void* data, int idx, const char** out_text)
     if (!*p)
         return false;
     if (out_text)
-        *out_text = p;
+        *out_text = XEMU_TR(p);
     return true;
 }
 
 // Combo box helper allowing to pass all items in a single string literal holding multiple zero-terminated items "item1\0item2\0"
+bool LocalizedCombo(const char *label, int *current_item,
+                    const char *items_separated_by_zeros)
+{
+    int items_count = 0;
+    for (const char *item = items_separated_by_zeros; *item;
+         item += strlen(item) + 1) {
+        ++items_count;
+    }
+    return ImGui::Combo(label, current_item, Items_SingleStringGetter,
+                        (void *)items_separated_by_zeros, items_count);
+}
+
 bool ChevronCombo(const char* label, int* current_item, const char* items_separated_by_zeros, const char *description)
 {
     int items_count = 0;
@@ -491,7 +506,7 @@ bool ChevronCombo(const char* label, int* current_item, const char* items_separa
 void Hyperlink(const char *text, const char *url)
 {
     ImColor col;
-    ImGui::Text("%s", text);
+    ImGui::Text("%s", XEMU_TR(text));
     if (ImGui::IsItemHovered()) {
         col = IM_COL32_WHITE;
         ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
@@ -518,7 +533,7 @@ void HelpMarker(const char* desc)
     {
         ImGui::BeginTooltip();
         ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-        ImGui::TextUnformatted(desc);
+        ImGui::TextUnformatted(XEMU_TR(desc));
         ImGui::PopTextWrapPos();
         ImGui::EndTooltip();
     }

@@ -25,6 +25,7 @@
 #include "monitor.hh"
 #include "debug.hh"
 #include "actions.hh"
+#include "i18n.hh"
 #include "compat.hh"
 #include "update.hh"
 #include "../xemu-os-utils.h"
@@ -90,15 +91,15 @@ void ShowMainMenu()
 
     if (ImGui::BeginMainMenuBar())
     {
-        if (ImGui::BeginMenu("Machine"))
+        if (ImGui::BeginMenu(XEMU_TR("Machine")))
         {
-            if (ImGui::MenuItem(running ? "Pause" : "Resume", SHORTCUT_MENU_TEXT(P))) ActionTogglePause();
-            if (ImGui::MenuItem("Screenshot", "F12")) ActionScreenshot();
+            if (ImGui::MenuItem(XEMU_TR(running ? "Pause" : "Resume"), SHORTCUT_MENU_TEXT(P))) ActionTogglePause();
+            if (ImGui::MenuItem(XEMU_TR("Screenshot"), "F12")) ActionScreenshot();
 
-            if (ImGui::BeginMenu("Snapshot")) {
-                if (ImGui::MenuItem("Create Snapshot")) {
+            if (ImGui::BeginMenu(XEMU_TR("Snapshot"))) {
+                if (ImGui::MenuItem(XEMU_TR("Create Snapshot"))) {
                     xemu_snapshots_save(NULL, NULL);
-                    xemu_queue_notification("Created new snapshot");
+                    xemu_queue_notification(XEMU_TR("Created new snapshot"));
                 }
 
                 for (int i = 0; i < 4; ++i) {
@@ -112,11 +113,11 @@ void ShowMainMenu()
                             (**(g_snapshot_shortcut_index_key_map[i]) != 0);
 
                     if (bound) {
-                        load_name = g_strdup_printf("Load '%s'", *(g_snapshot_shortcut_index_key_map[i]));
-                        save_name = g_strdup_printf("Save '%s'", *(g_snapshot_shortcut_index_key_map[i]));
+                        load_name = g_strdup_printf(XEMU_TR("Load '%s'"), *(g_snapshot_shortcut_index_key_map[i]));
+                        save_name = g_strdup_printf(XEMU_TR("Save '%s'"), *(g_snapshot_shortcut_index_key_map[i]));
                     } else {
-                        load_name = g_strdup_printf("Load F%d (Unbound)", i + 5);
-                        save_name = g_strdup_printf("Save F%d (Unbound)", i + 5);
+                        load_name = g_strdup_printf(XEMU_TR("Load F%d (Unbound)"), i + 5);
+                        save_name = g_strdup_printf(XEMU_TR("Save F%d (Unbound)"), i + 5);
                     }
 
                     ImGui::Separator();
@@ -139,21 +140,21 @@ void ShowMainMenu()
 
             ImGui::Separator();
 
-            if (ImGui::MenuItem("Eject Disc", SHORTCUT_MENU_TEXT(E))) ActionEjectDisc();
-            if (ImGui::MenuItem("Load Disc...", SHORTCUT_MENU_TEXT(O))) ActionLoadDisc();
+            if (ImGui::MenuItem(XEMU_TR("Eject Disc"), SHORTCUT_MENU_TEXT(E))) ActionEjectDisc();
+            if (ImGui::MenuItem(XEMU_TR("Load Disc..."), SHORTCUT_MENU_TEXT(O))) ActionLoadDisc();
 
             ImGui::Separator();
 
-            if (ImGui::MenuItem("Settings...")) g_main_menu.ShowSettings();
+            if (ImGui::MenuItem(XEMU_TR("Settings..."))) g_main_menu.ShowSettings();
 
             ImGui::Separator();
 
-            if (ImGui::MenuItem("Reset", SHORTCUT_MENU_TEXT(R))) ActionReset();
-            if (ImGui::MenuItem("Exit", SHORTCUT_MENU_TEXT(Q))) ActionShutdown();
+            if (ImGui::MenuItem(XEMU_TR("Reset"), SHORTCUT_MENU_TEXT(R))) ActionReset();
+            if (ImGui::MenuItem(XEMU_TR("Exit"), SHORTCUT_MENU_TEXT(Q))) ActionShutdown();
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("View"))
+        if (ImGui::BeginMenu(XEMU_TR("View")))
         {
             int ui_scale_idx;
             if (g_config.display.ui.auto_scale) {
@@ -163,7 +164,7 @@ void ShowMainMenu()
                 if (ui_scale_idx < 1) ui_scale_idx = 1;
                 else if (ui_scale_idx > 2) ui_scale_idx = 2;
             }
-            if (ImGui::Combo("UI Scale", &ui_scale_idx,
+            if (LocalizedCombo(XEMU_TR("UI Scale"), &ui_scale_idx,
                              "Auto\0"
                              "1x\0"
                              "2x\0")) {
@@ -175,7 +176,7 @@ void ShowMainMenu()
                 }
             }
 
-            ImGui::Combo("Backend", &g_config.display.renderer,
+            LocalizedCombo(XEMU_TR("Backend"), &g_config.display.renderer,
                  "Null\0"
                  "OpenGL\0"
 #ifdef CONFIG_VULKAN
@@ -184,7 +185,7 @@ void ShowMainMenu()
                 );
 
             int rendering_scale = nv2a_get_surface_scale_factor() - 1;
-            if (ImGui::Combo("Int. Resolution Scale", &rendering_scale,
+            if (LocalizedCombo(XEMU_TR("Internal resolution scale"), &rendering_scale,
                              "1x\0"
                              "2x\0"
                              "3x\0"
@@ -198,16 +199,16 @@ void ShowMainMenu()
                 nv2a_set_surface_scale_factor(rendering_scale + 1);
             }
 
-            ImGui::Combo("Display Mode", &g_config.display.ui.fit,
+            LocalizedCombo(XEMU_TR("Display Mode"), &g_config.display.ui.fit,
                          "Center\0Scale\0Stretch\0");
             ImGui::SameLine();
             HelpMarker("Controls how the rendered content should be scaled "
                        "into the window");
-            ImGui::Combo("Filter Method", &g_config.display.filtering,
+            LocalizedCombo(XEMU_TR("Filter Method"), &g_config.display.filtering,
                          "Linear\0Nearest\0");
-            ImGui::Combo("Aspect Ratio", &g_config.display.ui.aspect_ratio,
+            LocalizedCombo(XEMU_TR("Aspect Ratio"), &g_config.display.ui.aspect_ratio,
                          "Native\0Auto\0""4:3\0""16:9\0");
-            if (ImGui::MenuItem("Fullscreen", "F11",
+            if (ImGui::MenuItem(XEMU_TR("Fullscreen"), "F11",
                                 xemu_is_fullscreen(), true)) {
                 xemu_toggle_fullscreen();
             }
@@ -215,11 +216,11 @@ void ShowMainMenu()
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("Debug"))
+        if (ImGui::BeginMenu(XEMU_TR("Debug")))
         {
-            ImGui::MenuItem("Monitor", "~", &monitor_window.is_open);
-            ImGui::MenuItem("Audio", NULL, &apu_window.m_is_open);
-            ImGui::MenuItem("Video", NULL, &video_window.m_is_open);
+            ImGui::MenuItem(XEMU_TR("Monitor"), "~", &monitor_window.is_open);
+            ImGui::MenuItem(XEMU_TR("Audio"), NULL, &apu_window.m_is_open);
+            ImGui::MenuItem(XEMU_TR("Video"), NULL, &video_window.m_is_open);
 #ifdef CONFIG_RENDERDOC
             if (nv2a_dbg_renderdoc_available()) {
                 ImGui::MenuItem("RenderDoc: Capture", NULL, &g_capture_renderdoc_frame);
@@ -228,20 +229,20 @@ void ShowMainMenu()
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("Help"))
+        if (ImGui::BeginMenu(XEMU_TR("Help")))
         {
-            if (ImGui::MenuItem("Help", NULL)) {
+            if (ImGui::MenuItem(XEMU_TR("Help"), NULL)) {
                 SDL_OpenURL("https://xemu.app/docs/getting-started/");
             }
 
-            ImGui::MenuItem("Report Compatibility...", NULL,
+            ImGui::MenuItem(XEMU_TR("Report Compatibility..."), NULL,
                             &compatibility_reporter_window.is_open);
 #if defined(_WIN32)
-            ImGui::MenuItem("Check for Updates...", NULL, &update_window.is_open);
+            ImGui::MenuItem(XEMU_TR("Check for Updates..."), NULL, &update_window.is_open);
 #endif
 
             ImGui::Separator();
-            if (ImGui::MenuItem("About")) g_main_menu.ShowAbout();
+            if (ImGui::MenuItem(XEMU_TR("About"))) g_main_menu.ShowAbout();
             ImGui::EndMenu();
         }
 

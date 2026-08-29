@@ -60,6 +60,13 @@ const char *xemu_settings_get_error_message(void);
 // Load config file from disk, or load defaults. Return true on success, false if an error occured.
 bool xemu_settings_load(void);
 
+// Apply the complete machine-file set supplied by RetroApp. The settings are
+// persisted immediately so a first launch can boot content without showing
+// xemu's manual configuration screen.
+void xemu_settings_apply_retroapp_machine_files(const char *bootrom_path,
+                                                const char *flashrom_path,
+                                                const char *hdd_path);
+
 // Save config file to disk
 void xemu_settings_save(void);
 
